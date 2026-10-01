@@ -4,20 +4,18 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
-
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
@@ -34,15 +32,15 @@ public class MainActivityStandalone extends AppCompatActivity {
     /** contexto */
     private Context context;
 
-    Handler dialogWindowHandler;
+    private Handler dialogWindowHandler;
 
     /** asistente de la base de datos */
     private DatabaseHelper mDatabaseHelper;
 
     /** identificador de la serie de ejercicios */
-    private  long IDofExercise;
+    private long IDofExercise;
 
-    ProgressDialog mProgressDialog;
+    private ProgressDialog mProgressDialog;
 
     @SuppressLint("HandlerLeak")
     @Override
@@ -53,29 +51,30 @@ public class MainActivityStandalone extends AppCompatActivity {
         editTextWithNewName = findViewById(R.id.editTextExerciseName);
 
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        sensorAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        sensorGyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-        sensorMagneticField = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-
-        if ((sensorAccelerometer == null) || (sensorGyroscope == null) || (sensorMagneticField == null)){
-            finish();
+        if (sensorManager != null) {
+            sensorAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            sensorGyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+            sensorMagneticField = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         }
 
-        sensorManager.registerListener(sensorEventListener, sensorAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(sensorEventListener, sensorGyroscope, SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(sensorEventListener, sensorMagneticField, SensorManager.SENSOR_DELAY_NORMAL);
+        if (sensorManager == null || sensorAccelerometer == null || sensorGyroscope == null || sensorMagneticField == null) {
+            showMessage(this.getString(R.string.there_is_no_data_to_show));
+            finish();
+            return;
+        }
 
         context = this;
         mDatabaseHelper = new DatabaseHelper(context);
 
-/*
-        dialogWindowHandler = new Handler(){
+        dialogWindowHandler = new Handler(Looper.getMainLooper()) {
             @Override
-            public void handleMessage(@NonNull Message msg){
-                mProgressDialog.dismiss();            }
-
+            public void handleMessage(@NonNull Message msg) {
+                if (mProgressDialog != null && mProgressDialog.isShowing()) {
+                    mProgressDialog.dismiss();
+                }
+                showMessage(getString(R.string.data_collecting_stopped));
+            }
         };
-*/
     }
 
     @Override
@@ -86,76 +85,84 @@ public class MainActivityStandalone extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        sensorManager.unregisterListener(sensorEventListener);
+        if (sensorEventListener != null && sensorManager != null) {
+            sensorManager.unregisterListener(sensorEventListener);
+        }
     }
 
     @Override
-    protected void onDestroy()
-    {
+    protected void onDestroy() {
         super.onDestroy();
+        if (mDatabaseHelper != null) {
+            mDatabaseHelper.close();
+        }
     }
 
     public void btnCollectData(View v) {
         String nameOfExercise = editTextWithNewName.getText().toString();
         if (!nameOfExercise.equals("")) {
+            IDofExercise = System.currentTimeMillis() / 1000;
+
+            sensorEventListener = new SensorEventListener() {
+                private final float[] accelValues = new float[3];
+                private final float[] gyroValues = new float[3];
+                private final float[] magValues = new float[3];
+
+                @Override
+                public void onSensorChanged(SensorEvent sensorEvent) {
+                    switch (sensorEvent.sensor.getType()) {
+                        case Sensor.TYPE_ACCELEROMETER:
+                            System.arraycopy(sensorEvent.values, 0, accelValues, 0, 3);
+                            break;
+                        case Sensor.TYPE_GYROSCOPE:
+                            System.arraycopy(sensorEvent.values, 0, gyroValues, 0, 3);
+                            break;
+                        case Sensor.TYPE_MAGNETIC_FIELD:
+                            System.arraycopy(sensorEvent.values, 0, magValues, 0, 3);
+                            break;
+                    }
+
+                    double[] rawData = new double[]{
+                            accelValues[0], accelValues[1], accelValues[2],
+                            gyroValues[0], gyroValues[1], gyroValues[2],
+                            magValues[0], magValues[1], magValues[2]
+                    };
+
+                    int controlNr1 = (int) (System.currentTimeMillis() % 100000000);
+                    int controlNr2 = -2;
+
+                    mDatabaseHelper.addData(IDofExercise, nameOfExercise, controlNr1, rawData, controlNr2);
+                }
+
+                @Override
+                public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+                }
+            };
+
+            sensorManager.registerListener(sensorEventListener, sensorAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+            sensorManager.registerListener(sensorEventListener, sensorGyroscope, SensorManager.SENSOR_DELAY_GAME);
+            sensorManager.registerListener(sensorEventListener, sensorMagneticField, SensorManager.SENSOR_DELAY_GAME);
+
             AlertDialog alertDialog = new AlertDialog.Builder(this).create();
             alertDialog.setTitle(this.getString(R.string.data_collecting));
             alertDialog.setMessage(this.getString(R.string.data_collecting));
-            // alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, this.getString(R.string.stop), new DialogInterface.OnClickListener() {
             alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, this.getString(R.string.stop), (dialog, id) -> {
-            // mProgressDialog = ProgressDialog.show(context, context.getString(R.string.calculating), context.getString(R.string.please_wait), true);
+                if (sensorEventListener != null && sensorManager != null) {
+                    sensorManager.unregisterListener(sensorEventListener);
+                }
 
-                sensorEventListener = new SensorEventListener() {
-                    @Override
-                    public void onSensorChanged(SensorEvent sensorEvent){
+                mProgressDialog = ProgressDialog.show(context, context.getString(R.string.calculating), context.getString(R.string.please_wait), true);
 
-                        IDofExercise = System.currentTimeMillis() / 1000; // sensorEvent.timestamp;
-                        int controlNr1 = -1;
-                        int controlNr2 = -2;
-                        double[] RawData = new double[9];
-                        switch (sensorEvent.sensor.getType()) {
-                            case Sensor.TYPE_ACCELEROMETER:
-                                RawData[0] = sensorEvent.values[0];
-                                RawData[1] = sensorEvent.values[1];
-                                RawData[2] = sensorEvent.values[2];
-                                break; // Conciderar eliminar el corte
-                            case Sensor.TYPE_GYROSCOPE:
-                                RawData[3] = sensorEvent.values[0];
-                                RawData[4] = sensorEvent.values[1];
-                                RawData[5] = sensorEvent.values[2];
-                                break; // Conciderar eliminar el corte
-                            case Sensor.TYPE_MAGNETIC_FIELD:
-                                RawData[6] = sensorEvent.values[0];
-                                RawData[7] = sensorEvent.values[1];
-                                RawData[8] = sensorEvent.values[2];
-                                break; // Conciderar eliminar el corte
-                            default:
-                                break;
-                        }
-
-                        boolean insertData = mDatabaseHelper.addData(IDofExercise, nameOfExercise, controlNr1, RawData, controlNr2);
-
-                        mDatabaseHelper.close();
-                    }
-
-                    @Override
-                    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-                    }
-                };
-
-                // calcula ángulos de orientacion en otro enhebrado
-                Thread t = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        DataProcessing dataProcessing = new DataProcessing(getApplicationContext());
-                        dataProcessing.processData();
+                Thread t = new Thread(() -> {
+                    DataProcessing dataProcessing = new DataProcessing(getApplicationContext());
+                    dataProcessing.processData();
+                    if (dialogWindowHandler != null) {
                         dialogWindowHandler.sendEmptyMessage(0);
                     }
                 });
 
                 t.start();
-
             });
             alertDialog.show();
         } else {
@@ -163,15 +170,15 @@ public class MainActivityStandalone extends AppCompatActivity {
         }
     }
 
-/**
- * muestra un mensaje centrado
- * @param message: mensaje para mostrar
- */
-private void showMessage(String message)
-        {
+    /**
+     * muestra un mensaje centrado
+     *
+     * @param message: mensaje para mostrar
+     */
+    private void showMessage(String message) {
         Toast toast = Toast.makeText(this.getApplicationContext(), message, Toast.LENGTH_SHORT);
         TextView vi = toast.getView().findViewById(android.R.id.message);
         if (vi != null) vi.setGravity(Gravity.CENTER);
         toast.show();
-        }
+    }
 }
