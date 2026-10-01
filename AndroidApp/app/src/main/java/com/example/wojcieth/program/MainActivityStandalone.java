@@ -8,6 +8,7 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -62,7 +63,7 @@ public class MainActivityStandalone extends AppCompatActivity {
             sensorMagneticField = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         }
 
-        if (sensorManager == null || sensorAccelerometer == null || sensorGyroscope == null || sensorMagneticField == null) {
+        if (sensorManager == null || sensorAccelerometer == null) {
             showMessage(this.getString(R.string.there_is_no_data_to_show));
             finish();
             return;
@@ -78,6 +79,10 @@ public class MainActivityStandalone extends AppCompatActivity {
                     mProgressDialog.dismiss();
                 }
                 showMessage(getString(R.string.data_collecting_stopped));
+
+                Intent listDataScreenIntent = new Intent(MainActivityStandalone.this, ListDataFromSqlDatabaseBySelectedId.class);
+                listDataScreenIntent.putExtra("selectedID", (int) IDofExercise);
+                startActivity(listDataScreenIntent);
             }
         };
     }
@@ -146,9 +151,15 @@ public class MainActivityStandalone extends AppCompatActivity {
                 }
             };
 
-            sensorManager.registerListener(sensorEventListener, sensorAccelerometer, SensorManager.SENSOR_DELAY_GAME);
-            sensorManager.registerListener(sensorEventListener, sensorGyroscope, SensorManager.SENSOR_DELAY_GAME);
-            sensorManager.registerListener(sensorEventListener, sensorMagneticField, SensorManager.SENSOR_DELAY_GAME);
+            if (sensorAccelerometer != null) {
+                sensorManager.registerListener(sensorEventListener, sensorAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+            }
+            if (sensorGyroscope != null) {
+                sensorManager.registerListener(sensorEventListener, sensorGyroscope, SensorManager.SENSOR_DELAY_GAME);
+            }
+            if (sensorMagneticField != null) {
+                sensorManager.registerListener(sensorEventListener, sensorMagneticField, SensorManager.SENSOR_DELAY_GAME);
+            }
 
             AlertDialog alertDialog = new AlertDialog.Builder(this).create();
             alertDialog.setTitle(this.getString(R.string.data_collecting));
