@@ -16,6 +16,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
@@ -23,6 +24,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivityStandalone extends AppCompatActivity {
+
+    private static final String TAG = "MainActivityStandalone";
 
     private EditText editTextWithNewName;
     private SensorManager sensorManager;
@@ -41,6 +44,8 @@ public class MainActivityStandalone extends AppCompatActivity {
     private long IDofExercise;
 
     private ProgressDialog mProgressDialog;
+
+    private long startTimeMs;
 
     @SuppressLint("HandlerLeak")
     @Override
@@ -102,6 +107,7 @@ public class MainActivityStandalone extends AppCompatActivity {
         String nameOfExercise = editTextWithNewName.getText().toString();
         if (!nameOfExercise.equals("")) {
             IDofExercise = System.currentTimeMillis() / 1000;
+            startTimeMs = System.currentTimeMillis();
 
             sensorEventListener = new SensorEventListener() {
                 private final float[] accelValues = new float[3];
@@ -128,7 +134,7 @@ public class MainActivityStandalone extends AppCompatActivity {
                             magValues[0], magValues[1], magValues[2]
                     };
 
-                    int controlNr1 = (int) (System.currentTimeMillis() % 100000000);
+                    int controlNr1 = (int) (System.currentTimeMillis() - startTimeMs);
                     int controlNr2 = -2;
 
                     mDatabaseHelper.addData(IDofExercise, nameOfExercise, controlNr1, rawData, controlNr2);
@@ -155,10 +161,15 @@ public class MainActivityStandalone extends AppCompatActivity {
                 mProgressDialog = ProgressDialog.show(context, context.getString(R.string.calculating), context.getString(R.string.please_wait), true);
 
                 Thread t = new Thread(() -> {
-                    DataProcessing dataProcessing = new DataProcessing(getApplicationContext());
-                    dataProcessing.processData();
-                    if (dialogWindowHandler != null) {
-                        dialogWindowHandler.sendEmptyMessage(0);
+                    try {
+                        DataProcessing dataProcessing = new DataProcessing(getApplicationContext());
+                        dataProcessing.processData();
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error during data processing", e);
+                    } finally {
+                        if (dialogWindowHandler != null) {
+                            dialogWindowHandler.sendEmptyMessage(0);
+                        }
                     }
                 });
 
