@@ -1,0 +1,46 @@
+<resources>
+    <string name="app_name">Program</string>
+    <string name="instruction_main">Enter a name for the exercise</string>
+    <string name="instruction_main2">and start collecting data</string>
+    <string name="bluetooth_lack">The device does not have Bluetooth</string>
+    <string name="bonded">Paired up</string>
+    <string name="bonding">Pairing...</string>
+    <string name="bond_none">Not paired</string>
+    <string name="errorCheckDevices">Data could not be transferred via Bluetooth, please check the connection</string>
+    <string name="found_device">Device found</string>
+    <string name="connected">Connected</string>
+    <string name="search_ended">Search ended</string>
+    <string name="disconnecting">Disconnecting...</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="connecting">Connecting...</string>
+    <string name="connectingProgress">Connecting to your device...</string>
+    <string name="please_wait">Please wait</string>
+    <string name="connect_to_device">Connect to the device</string>
+    <string name="paired_devices">Paired devices</string>
+    <string name="finding_devices">Searching for devices...</string>
+    <string name="list_of_data_from_sql">List of SQL database</string>
+    <string name="show_data">Show data</string>
+    <string name="id">Identifier</string>
+    <string name="there_is_no_data_to_show">There are no items to show</string>
+    <string name="data_collecting_stopped">Data collection stopped</string>
+    <string name="data_collecting_started">Data collection started</string>
+    <string name="delete_data">Delete data</string>
+    <string name="new_exercise_name">New exercise name</string>
+    <string name="change_the_name">New exercise name</string>
+    <string name="you_must_enter_the_name">You must enter a name</string>
+    <string name="deleted">Deleted</string>
+    <string name="connect_first">Connect to your device first</string>
+    <string name="collect_data">Collect data</string>
+    <string name="exercise_name">Exercise name</string>
+    <string name="delete_ask">Delete the data?</string>
+    <string name="do_u_want_to_delete">Do you want to delete the currently selected data?</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="data_collecting">Collecting data...</string>
+    <string name="stop">Stop</string>
+    <string name="calculating">Calculating...</string>
+    <string name="select_mode">Select Mode</string>
+    <string name="standalone">Standalone</string>
+    <string name="dual">Dual</string>
+</resources>
+
