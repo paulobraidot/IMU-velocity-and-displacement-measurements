@@ -27,6 +27,8 @@ import android.widget.Toast;
  */
 public class MainActivity extends AppCompatActivity
 {
+    private static final String TAG = "MainActivity";
+
     BluetoothConnection BT;
     private EditText editTextWithNewName;
     Context context;
@@ -47,10 +49,13 @@ public class MainActivity extends AppCompatActivity
         editTextWithNewName = findViewById(R.id.editTextExerciseName);
 
         context = this;
-        dialogWindowHandler = new Handler(){
+        dialogWindowHandler = new Handler(Looper.getMainLooper()){
             @Override
             public void handleMessage(Message msg){
-            mProgressDialog.dismiss();            }
+                if (mProgressDialog != null && mProgressDialog.isShowing()) {
+                    mProgressDialog.dismiss();
+                }
+            }
         };
     }
 
@@ -137,16 +142,20 @@ public class MainActivity extends AppCompatActivity
                         BT.collectDataStateChange();
                         mProgressDialog = ProgressDialog.show(context, context.getString(R.string.calculating), context.getString(R.string.please_wait), true);
 
-
-
-
                         // calcula ángulos de orientacion en otro enhebrado
                         Thread t = new Thread(new Runnable() {
                             @Override
                             public void run() {
-                                DataProcessing dataProcessing = new DataProcessing(getApplicationContext());
-                                dataProcessing.processData();
-                                dialogWindowHandler.sendEmptyMessage(0);
+                                try {
+                                    DataProcessing dataProcessing = new DataProcessing(getApplicationContext());
+                                    dataProcessing.processData();
+                                } catch (Exception e) {
+                                    Log.e(TAG, "Error processing data", e);
+                                } finally {
+                                    if (dialogWindowHandler != null) {
+                                        dialogWindowHandler.sendEmptyMessage(0);
+                                    }
+                                }
                             }});
 
                         t.start();
@@ -168,15 +177,6 @@ public class MainActivity extends AppCompatActivity
             startActivity(mIntentMenuBluetooth);
         }
     }
-
-    // prueba
-    /*public void diodeOn(View v)
-    {
-        EditText et = findViewById(R.id.editText);
-        String s = et.getText().toString();
-        BT.write(s);
-    }*/
-
 
     /**
      * muestra un mensaje centrado

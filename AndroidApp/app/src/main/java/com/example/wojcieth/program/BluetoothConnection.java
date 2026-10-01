@@ -86,8 +86,7 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
     /** enlace que sostiene la conexión */
     private ConnectedThread mConnectedThread = null;
 
-    /** manipulador para la clase manipulador de mensaje entrante
-     * @see com.example.wojciech.program.IncomingMessageHandler */
+    /** manipulador para la clase manipulador de mensaje entrante */
     Handler bluetoothIn = null;
 
     /** identificación del manipulador */
@@ -109,11 +108,6 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
     private String mExerciseName;
 
 
-    /**
-     * crea un receptor de difusion que rastrea los cambios de estado de Bluetooth
-     * utilizado por el método enableBluetooth()
-     * @see com.example.wojciech.program.BluetoothConnection#enableBluetooth(Context)
-     */
     private final BroadcastReceiver mBroadcastReceiver1 = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -142,11 +136,6 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
     };
 
 
-    /**
-     * crea un receptor de difusion que rastrea los cambios en el estado Descubrible (el dispositivo puede ser encontrado por otro)
-     * utilizado por el método enableDiscoverableMode()
-     * @see com.example.wojciech.program.BluetoothConnection#enableDiscoverableMode()
-     */
     private final BroadcastReceiver mBroadcastReceiver2 = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -156,11 +145,9 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
                 int mode = intent.getIntExtra(BluetoothAdapter.EXTRA_SCAN_MODE, BluetoothAdapter.ERROR);
 
                 switch (mode) {
-                    // dispositivo en modo descubrible
                     case BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE:
                         Log.i("BluetoothConnection", "mBroadcastReceiver2: Discoverability Enabled");
                         break;
-                    // dispositivo en modo no descubrible
                     case BluetoothAdapter.SCAN_MODE_CONNECTABLE:
                         Log.i("BluetoothConnection", "mBroadcastReceiver2: Discoverability Disabled. Able to receive connections");
                         break;
@@ -179,32 +166,24 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
     };
 
 
-    /**
-     * crea un receptor de difusion que rastrea el estado de búsqueda de dispositivos que no están emparejados y los agrega a la lista mBluetoothDevices
-     * utilizado por el método discoverDevices()
-     * @see com.example.wojciech.program.BluetoothConnection#discoverDevices()
-     */
     private final BroadcastReceiver mBroadcastReceiver3 = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
 
             if (action != null && action.equals(BluetoothDevice.ACTION_FOUND)) {
-                // si encuentra el dispositivo, lo agrega a la lista mBluetoothDevices
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 mBluetoothDevices.add(device);
                 Log.i("BluetoothConnection", "mBroadcastReceiver3:" + device.getName() + ": " + device.getAddress());
-                mDeviceListAdapter = new DeviceListAdapter(mContext, R.layout.device_adapter_view, mBluetoothDevices); // Aquí está R.layout.device_adapter_view, que es un archivo xml donde ingresamos el nombre del dispositivo y su dirección mac
-                lvNewDevices.setAdapter(mDeviceListAdapter);
+                if (lvNewDevices != null) {
+                    mDeviceListAdapter = new DeviceListAdapter(mContext, R.layout.device_adapter_view, mBluetoothDevices);
+                    lvNewDevices.setAdapter(mDeviceListAdapter);
+                }
             }
         }
     };
 
 
-    /**
-     * crea un receptor de difusion que detecte cambios de estado de enlace (emparejamiento)
-     * utilizado en el constructor
-     */
     private final BroadcastReceiver mBroadcastReceiver4 = new BroadcastReceiver()
     {
         @Override
@@ -215,20 +194,18 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
             if (action != null && action.equals(BluetoothDevice.ACTION_BOND_STATE_CHANGED))
             {
                 BluetoothDevice mDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                if (mDevice != null)
                 {
-                    // dispositivo ya vinculado
                     if (mDevice.getBondState() == BluetoothDevice.BOND_BONDED)
                     {
                         Log.i("BluetoothConnection", "mBroadcastReceiver4: BOND_BONDED");
                         showMessage(mContext.getString(R.string.bonded));
                     }
-                    // vinculando dispositivo
                     if (mDevice.getBondState() == BluetoothDevice.BOND_BONDING)
                     {
                         Log.i("BluetoothConnection", "mBroadcastReceiver4: BOND_BONDING");
                         showMessage(mContext.getString(R.string.bonding));
                     }
-                    // desvinculación
                     if (mDevice.getBondState() == BluetoothDevice.BOND_NONE)
                     {
                         Log.i("BluetoothConnection", "mBroadcastReceiver4: BOND_NONE");
@@ -240,16 +217,6 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
     };
 
 
-
-
-
-
-
-
-
-    /**
-     * receptor de difusion que analiza las transmisiones por Bluetooth, informa cuando se conecta o desconecta del dispositivo
-     */
     private final BroadcastReceiver mBroadcastReceiver5 = new BroadcastReceiver()
     {
         @Override
@@ -261,14 +228,12 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
             {
                 BluetoothDevice mDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 {
-                    // conexión
                     if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action))
                     {
                         Log.i("BluetoothConnection", "Connected");
                         mConnectionStatus = true;
                         showMessage(mContext.getString(R.string.connected));
                     }
-                    // desconexión
                     if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action))
                     {
                         Log.i("BluetoothConnection", "Disconnected");
@@ -281,16 +246,6 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
     };
 
 
-
-
-
-
-
-
-    /**
-     * Constructor
-     *
-     */
     public BluetoothConnection()
     {
         mCollectDataState = false;
@@ -298,10 +253,6 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
     }
 
 
-    /**
-     * asigna contexto a la variable de contexto mContext y crea mActivity, establece receptores de registros
-     * @param context: contexto
-     */
     public void setContextAndRegisterReceivers(Context context)
     {
         mContext = context;
@@ -309,175 +260,127 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
 
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
-        // seguimiento del cambio de estado de Bluetooth a mBroadcastReceiver1
-        IntentFilter BluetoothIntent = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-        mContext.registerReceiver(mBroadcastReceiver1, BluetoothIntent);
+        try {
+            IntentFilter BluetoothIntent = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+            mContext.registerReceiver(mBroadcastReceiver1, BluetoothIntent);
 
-        // seguimiento de cambios de estado de origen mBroadcastReceiver2: admite descubrimiento
-        IntentFilter intentFilter = new IntentFilter(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
-        mContext.registerReceiver(mBroadcastReceiver2, intentFilter);
+            IntentFilter intentFilter = new IntentFilter(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
+            mContext.registerReceiver(mBroadcastReceiver2, intentFilter);
 
-        // difusión desde la búsqueda de dispositivos
-        IntentFilter discoverDevicesIntent = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        mContext.registerReceiver(mBroadcastReceiver3, discoverDevicesIntent);
+            IntentFilter discoverDevicesIntent = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+            mContext.registerReceiver(mBroadcastReceiver3, discoverDevicesIntent);
 
-        // difusión cuando cambia el estado del vínculo, por ejemplo, emparejamiento
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
-        mContext.registerReceiver(mBroadcastReceiver4, filter);
+            IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+            mContext.registerReceiver(mBroadcastReceiver4, filter);
 
-        // receptor de difusión que informa sobre cómo conectar el dispositivo
-        IntentFilter filter1 = new IntentFilter(BluetoothDevice.ACTION_ACL_CONNECTED);
-        filter1.addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED);
-        filter1.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
-        mContext.registerReceiver(mBroadcastReceiver5, filter1);
+            IntentFilter filter1 = new IntentFilter(BluetoothDevice.ACTION_ACL_CONNECTED);
+            filter1.addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED);
+            filter1.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
+            mContext.registerReceiver(mBroadcastReceiver5, filter1);
+        } catch (Exception e) {
+            Log.e("BluetoothConnection", "Error registering receivers", e);
+        }
 
-
-        // manipulador para poner en fila los mensajes entrantes
-        bluetoothIn = new IncomingMessageHandler(handlerState, mContextMain);
+        if (mContextMain != null) {
+            bluetoothIn = new IncomingMessageHandler(handlerState, mContextMain);
+        }
     }
 
 
-    /**
-     * establece TextViews en los que se mostrarán la búsqueda de dispositivos y el dispositivo emparejado
-     */
     public void setTextViews()
     {
+        if (mActivity == null) return;
 
-        lvNewDevices = mActivity.findViewById(R.id.lvNewDevices); // TODO probablemente no sea la lista final de dispositivos
+        lvNewDevices = mActivity.findViewById(R.id.lvNewDevices);
         mBluetoothDevices = new ArrayList<>();
-        lvNewDevices.setOnItemClickListener(BluetoothConnection.this);
+        if (lvNewDevices != null) {
+            lvNewDevices.setOnItemClickListener(BluetoothConnection.this);
+        }
 
-        lvPairedDevices = mActivity.findViewById(R.id.lvPairedDevices); //TODO probablemente no sea la lista final de dispositivos
+        lvPairedDevices = mActivity.findViewById(R.id.lvPairedDevices);
         mBluetoothPairedDevices = new ArrayList<>();
-        lvPairedDevices.setOnItemClickListener(BluetoothConnection.this);
+        if (lvPairedDevices != null) {
+            lvPairedDevices.setOnItemClickListener(BluetoothConnection.this);
+        }
     }
 
 
-    /**
-     * establece el contexto principal
-     */
     public void SetContextMain(Context context)
     {
         mContextMain = context;
     }
 
 
-
-    /**
-     * imprime dispositivos emparejados
-     */
     public void listPairedDevices()
     {
-        Set<BluetoothDevice> all_devices = mBluetoothAdapter.getBondedDevices();
-        if (all_devices.size() > 0)
-        {
-            for (BluetoothDevice currentDevice : all_devices)
+        if (mBluetoothAdapter == null) return;
+        try {
+            Set<BluetoothDevice> all_devices = mBluetoothAdapter.getBondedDevices();
+            if (all_devices != null && all_devices.size() > 0)
             {
-                Log.i("PairedDevices", "PairedDevices:" + currentDevice.getName() + ": " + currentDevice.getAddress());
-                mDevicePairedListAdapter = new DeviceListAdapter(mContext, R.layout.device_adapter_view, mBluetoothPairedDevices);
-                mBluetoothPairedDevices.add(currentDevice);
-                lvPairedDevices.setAdapter(mDevicePairedListAdapter);
+                for (BluetoothDevice currentDevice : all_devices)
+                {
+                    Log.i("PairedDevices", "PairedDevices:" + currentDevice.getName() + ": " + currentDevice.getAddress());
+                    if (lvPairedDevices != null) {
+                        mDevicePairedListAdapter = new DeviceListAdapter(mContext, R.layout.device_adapter_view, mBluetoothPairedDevices);
+                        mBluetoothPairedDevices.add(currentDevice);
+                        lvPairedDevices.setAdapter(mDevicePairedListAdapter);
+                    }
+                }
             }
+        } catch (Exception e) {
+            Log.e("BluetoothConnection", "Error listing paired devices", e);
         }
     }
 
 
-
-
-
-
-    /**
-     * activa bluetooth
-     */
     public static void enableBluetooth(Context context)
     {
         BluetoothAdapter mmBluetoothAdapter  = BluetoothAdapter.getDefaultAdapter();
         Activity mmActivity = getActivity(context);
 
-        // el dispositivo no tiene bluetooth
         if (mmBluetoothAdapter == null)
         {
-            // muesta información sobre bluetooth que falta
             Log.e("Bluetooth", "There is no bluetooth on the device");
         } else if (!mmBluetoothAdapter.isEnabled())
         {
-            // pregunta al usuario si desea activar el bluetooth
             Intent turnBluetoothOn = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             if (mmActivity != null)
                 mmActivity.startActivityForResult(turnBluetoothOn, 1);
-
         }
 
     }
 
 
-
-
-
-
-
-
-    /**
-     * configura el dispositivo en detectable (visible para otros dispositivos) durante 30 segundos
-     */
     public void enableDiscoverableMode()
     {
-        // activa detectable durante 30 segundos
+        if (mContext == null) return;
         Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
         discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 30);
         mContext.startActivity(discoverableIntent);
-
-
     }
 
 
-
-
-
-
-
-
-    /**
-     * busca dispositivos bluetooth habilitados
-     */
     public void discoverDevices()
     {
-        if (mBluetoothAdapter.isDiscovering()) // consulta si esta escaneando
+        if (mBluetoothAdapter == null) return;
+        if (mBluetoothAdapter.isDiscovering())
         {
-            // deja de escanear
             mBluetoothAdapter.cancelDiscovery();
-
-            // verifica permisos
             checkBluetoothPermissions();
-
-            // empieza a escanear
             mBluetoothAdapter.startDiscovery();
-
         } else
         {
-            // verifica permisos
             checkBluetoothPermissions();
-
-            // empieza a escanear
             mBluetoothAdapter.startDiscovery();
-
         }
     }
 
 
-
-
-
-
-
-
-    /**
-     * verifica permisos para buscar dispositivos a través de bluetooth, requerida en todos los dispositivos API 23+
-     * android debe verificar los permisos mediante programación y agregarlos al manifiesto si no están presentes
-     */
     @TargetApi(23)
     private void checkBluetoothPermissions()
     {
+        if (mContext == null || mActivity == null) return;
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP)
         {
             int permissionCheck = mContext.checkSelfPermission("Manifest.permission.ACCESS_FINE_LOCATION");
@@ -490,19 +393,9 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
     }
 
 
-
-
-
-
-
-
-    /**
-     * muestra un mensaje centrado
-     *
-     * @param message: mensaje para mostrar
-     */
     private void showMessage(String message)
     {
+        if (mContext == null) return;
         Toast toast = Toast.makeText(mContext.getApplicationContext(), message, Toast.LENGTH_SHORT);
         TextView vi = toast.getView().findViewById(android.R.id.message);
         if (vi != null) vi.setGravity(Gravity.CENTER);
@@ -510,19 +403,6 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
     }
 
 
-
-
-
-
-
-
-
-    /**
-     * devuelve actividad desde el contexto
-     *
-     * @param context: contexto desde el cual se devolverá la actividad
-     * @return activity: actividad o nulo en caso de error
-     */
     private static Activity getActivity(Context context)
     {
         if (context == null)
@@ -543,31 +423,17 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
     }
 
 
-
-
-
-
-
-    /**
-     * libera receptor de difusión
-     */
     public void unregisterBroadcastReceiver()
     {
-        mContext.unregisterReceiver(mBroadcastReceiver1);
-        mContext.unregisterReceiver(mBroadcastReceiver2);
-        mContext.unregisterReceiver(mBroadcastReceiver3);
-        mContext.unregisterReceiver(mBroadcastReceiver4);
-        mContext.unregisterReceiver(mBroadcastReceiver5);
+        if (mContext == null) return;
+        try { mContext.unregisterReceiver(mBroadcastReceiver1); } catch (Exception ignored) {}
+        try { mContext.unregisterReceiver(mBroadcastReceiver2); } catch (Exception ignored) {}
+        try { mContext.unregisterReceiver(mBroadcastReceiver3); } catch (Exception ignored) {}
+        try { mContext.unregisterReceiver(mBroadcastReceiver4); } catch (Exception ignored) {}
+        try { mContext.unregisterReceiver(mBroadcastReceiver5); } catch (Exception ignored) {}
     }
 
 
-
-
-
-
-    /**
-     * cierra el puerto bluetooth
-     */
     public void closeBluetoothSocket()
     {
         try
@@ -581,118 +447,73 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
     }
 
 
-
-
-
-
-
-    /**
-     * empareja con un dispositivo de la lista
-     */
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l)
     {
-        if(adapterView.getId() == R.id.lvNewDevices)
-        {
-            // deja de escanear
+        if (mBluetoothAdapter != null) {
             mBluetoothAdapter.cancelDiscovery();
-
-            // obtiene el nombre y la dirección del dispositivo seleccionado
-            String deviceName = mBluetoothDevices.get(i).getName();
-            String deviceAddress = mBluetoothDevices.get(i).getAddress();
-
-            Log.i("BluetoothConnection", "Device name: " + deviceName);
-            Log.i("BluetoothConnection", "Device address: " + deviceAddress);
-
-            // empareja el dispositivo con una forma mas reciente
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR2)
-            {
-                startClient(mBluetoothDevices.get(i));
-            }
         }
 
-        // selecciona en la lista de dispositivos emparejados
+        if(adapterView.getId() == R.id.lvNewDevices)
+        {
+            if (i < mBluetoothDevices.size()) {
+                String deviceName = mBluetoothDevices.get(i).getName();
+                String deviceAddress = mBluetoothDevices.get(i).getAddress();
+
+                Log.i("BluetoothConnection", "Device name: " + deviceName);
+                Log.i("BluetoothConnection", "Device address: " + deviceAddress);
+
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR2)
+                {
+                    startClient(mBluetoothDevices.get(i));
+                }
+            }
+        }
         else
         {
-            // deja de escanear
-            mBluetoothAdapter.cancelDiscovery();
+            if (mBluetoothPairedDevices != null && i < mBluetoothPairedDevices.size()) {
+                String deviceName = mBluetoothPairedDevices.get(i).getName();
+                String deviceAddress = mBluetoothPairedDevices.get(i).getAddress();
 
-            // obtiene el nombre y la dirección del dispositivo seleccionado
-            String deviceName = mBluetoothPairedDevices.get(i).getName();
-            String deviceAddress = mBluetoothPairedDevices.get(i).getAddress();
+                Log.i("BluetoothConnection", "Device name: " + deviceName);
+                Log.i("BluetoothConnection", "Device address: " + deviceAddress);
 
-            Log.i("BluetoothConnection", "Device name: " + deviceName);
-            Log.i("BluetoothConnection", "Device address: " + deviceAddress);
-
-            // empareja el dispositivo con una forma mas reciente
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR2)
-            {
-                startClient(mBluetoothPairedDevices.get(i));
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR2)
+                {
+                    startClient(mBluetoothPairedDevices.get(i));
+                }
             }
         }
     }
 
 
-
-
-
-
-
-    /**
-     * inicia el enhebrado de conexión para establecer una conexión.
-     * @see ConnectionThread
-     **/
     private void startClient(BluetoothDevice device)
     {
         Log.d("startClient", "startClient: Started.");
 
-        // inicia el diálogo de progreso
-        mProgressDialog = ProgressDialog.show(mContext, mContext.getString(R.string.connectingProgress), mContext.getString(R.string.please_wait), true);
+        if (mContext != null) {
+            mProgressDialog = ProgressDialog.show(mContext, mContext.getString(R.string.connectingProgress), mContext.getString(R.string.please_wait), true);
+        }
 
         mConnectionThread = new ConnectionThread(device);
         mConnectionThread.start();
     }
 
 
-
-
-
-
-
-    /**
-     * establece el enhebrado de la conexión: en la cual se crea un puerto y luego se activa la conexión
-     * @see #connected(BluetoothSocket, BluetoothDevice)
-     */
     private class ConnectionThread extends Thread
     {
         private BluetoothSocket mmBluetoothSocket;
 
-
-        /**
-         * constructor
-         * @param device: dispositivo con el que se va a establecer la conexión
-         */
         public ConnectionThread(BluetoothDevice device)
         {
             Log.i("ConnectedThread", "Linked");
-
             mmDevice = device;
         }
 
-
-        /**
-         * crea una conexión y luego activa las funciones conectadas
-         * @see BluetoothConnection#connected(BluetoothSocket, BluetoothDevice)
-         */
         public void run()
         {
             BluetoothSocket tmp = null;
 
-
-            // showMessage(mContext.getString(R.string.connecting));
-
-
-            // crea un puerto bluetooth para la conexión a un dispositivo específico
             try
             {
                 tmp = mmDevice.createRfcommSocketToServiceRecord(MY_UUID);
@@ -701,14 +522,12 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
                 Log.e("SetConnection", "Could not create Bluetooth socket");
             }
 
-
             mmBluetoothSocket = tmp;
 
+            if (mBluetoothAdapter != null) {
+                mBluetoothAdapter.cancelDiscovery();
+            }
 
-            // deshabilita el descubrimiento porque ralentiza mucho la conexión
-            mBluetoothAdapter.cancelDiscovery();
-
-            // crea una conexión
             try
             {
                 mmBluetoothSocket.connect();
@@ -716,7 +535,6 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
             {
                 try
                 {
-                    // si se produce un error de entrada/salida, intenta cerrar el puerto
                     mmBluetoothSocket.close();
                 } catch (IOException e2)
                 {
@@ -724,18 +542,11 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
                 }
             }
 
-
             connected(mmBluetoothSocket, mmDevice);
         }
     }
 
 
-
-
-
-    /**
-     * inicia un enhebrado para gestionar la conexión y enviar datos
-     */
     private void connected(BluetoothSocket mmSocket, BluetoothDevice mmDevice)
     {
         Log.d("connected", "connected: Starting.");
@@ -744,24 +555,12 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
     }
 
 
-
-
-
-
-    /**
-     * enhebrado responsable de mantener la conexión, enviar y recibir datos.
-     **/
     private class ConnectedThread extends Thread
     {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
 
-
-        /**
-         * constructor
-         * @param socket: puerto a manipular
-         */
         public ConnectedThread(BluetoothSocket socket)
         {
             Log.d("ConnectedThread", "ConnectedThread: Starting");
@@ -770,20 +569,22 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
 
-            // elimina el cuadro de diálogo de carga cuando se conecta
             try
             {
-                mProgressDialog.dismiss();
-            } catch (NullPointerException e)
+                if (mProgressDialog != null) {
+                    mProgressDialog.dismiss();
+                }
+            } catch (Exception e)
             {
                 e.printStackTrace();
             }
 
-
             try
             {
-                tmpIn = mmSocket.getInputStream();
-                tmpOut = mmSocket.getOutputStream();
+                if (mmSocket != null) {
+                    tmpIn = mmSocket.getInputStream();
+                    tmpOut = mmSocket.getOutputStream();
+                }
             } catch (IOException e)
             {
                 e.printStackTrace();
@@ -793,26 +594,23 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
             mmOutStream = tmpOut;
         }
 
-
-        /**
-         * soporte de comunicación
-         */
         public void run()
         {
-            byte[] buffer = new byte[1024];  // vector de flujo
+            byte[] buffer = new byte[1024];
 
-            int bytes; // bytes devueltos por read()
+            int bytes;
 
-            // lee el flujo de entrada hasta que ocurra una excepción
             while (true)
             {
-                // leer el flujo de entrada
                 try
                 {
+                    if (mmInStream == null) break;
                     bytes = mmInStream.read(buffer);
                     String incomingMessage = new String(buffer, 0, bytes);
                     Log.d("ConnectedThread", "Reading from input stream: " + incomingMessage);
-                    bluetoothIn.obtainMessage(handlerState, bytes, -1, incomingMessage).sendToTarget();
+                    if (bluetoothIn != null) {
+                        bluetoothIn.obtainMessage(handlerState, bytes, -1, incomingMessage).sendToTarget();
+                    }
                 } catch (IOException e)
                 {
                     Log.e("ConnectedThread", "Error reading input stream" + e.getMessage());
@@ -821,32 +619,28 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
             }
         }
 
-
-        /**
-         * envía datos
-         * @param bytes: datos para enviar
-         */
         public void write(byte[] bytes)
         {
             String text = new String(bytes, Charset.defaultCharset());
             Log.d("ConnectedThread", "Writing to output stream: " + text);
             try
             {
-                mmOutStream.write(bytes);
+                if (mmOutStream != null) {
+                    mmOutStream.write(bytes);
+                }
             } catch (IOException e)
             {
                 Log.e("ConnectedThread", "Error writing to output stream" + e.getMessage());
             }
         }
 
-        /**
-         * cierra puerto
-         */
         public void cancel()
         {
             try
             {
-                mmSocket.close();
+                if (mmSocket != null) {
+                    mmSocket.close();
+                }
             } catch (IOException e)
             {
             }
@@ -854,40 +648,24 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
     }
 
 
-
-
-
-    /**
-     * envía un mensaje, escribiendo en ConnectedThread
-     *
-     * @param message: datos para enviar
-     * @see ConnectedThread#write(byte[])
-     */
     public void write(String message)
     {
         Log.d("write", "write: Write Called.");
-        //string to byte
         byte[] messageBuffer = message.getBytes();
-        //napisz
         if(mConnectedThread != null)
             mConnectedThread.write(messageBuffer);
     }
 
 
-    /**
-     * capta el estado de conexión
-     * @return mConnectionStatus: valor verdadero para conectado
-     */
     public boolean getConnectionStatus()
     {
         return mConnectionStatus;
     }
 
-    /**
-     * cambia el estado de la recopilación de datos: si los datos deben guardarse en la base de datos
-     */
+
     public void collectDataStateChange()
     {
+        if (mContext == null) return;
         if(mCollectDataState)
         {
             mCollectDataState = false;
@@ -903,55 +681,32 @@ public class BluetoothConnection extends Application implements AdapterView.OnIt
     }
 
 
-    /**
-     * capta el estado de la recopilación de datos
-     * @return mCollectDataState
-     */
     public boolean getCollectDataState()
     {
         return mCollectDataState;
     }
 
 
-
-    /**
-     * capta de estado de cambio de recopilación de datos: configurado en verdadero recopila cuando hay cambios y se utiliza para asignar una identificación única a los ejercicios
-     * @return mCollectDataState
-     */
     public boolean getCollectDataStateOnChange()
     {
         return mCollectDataStateOnChange;
     }
 
 
-    /**
-     * establece el estado de cambio de recopilación de datos: configurado en verdadero recopila cuando hay cambios y se utiliza para asignar una identificación única a los ejercicios
-     * @param mCollectDataStateOnChange: se establece en falso cuando se asigna un identificador
-     */
     public void setCollectDataStateOnChange(boolean mCollectDataStateOnChange)
     {
         this.mCollectDataStateOnChange = mCollectDataStateOnChange;
     }
 
 
-    /**
-     * capta el nombre del ejercicio que se transmite al manejar datos entrantes
-     * @return mExerciseName: nombre del ejercicio
-     */
     public String getExerciseName()
     {
         return mExerciseName;
     }
 
 
-    /**
-     * establece el nombre del ejercicio
-     * @param mExerciseName: nombre del ejercicio
-     */
     public void setExerciseName(String mExerciseName)
     {
         this.mExerciseName = mExerciseName;
     }
 }
-
-

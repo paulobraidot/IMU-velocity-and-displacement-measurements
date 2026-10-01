@@ -2,6 +2,7 @@ package com.example.wojcieth.program;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.util.Log;
 import android.util.Pair;
 
 import java.util.Vector;
@@ -12,6 +13,8 @@ import java.util.Vector;
  */
 public class DataProcessing
 {
+    private static final String TAG = "DataProcessing";
+
     /** contexto */
     private Context context;
 
@@ -53,6 +56,16 @@ public class DataProcessing
         ZeroVelocityUpdate zeroVelocity = new ZeroVelocityUpdate();
 
         Cursor data = databaseHelper.getData(IDofExercise);
+
+        if (data == null || data.getCount() == 0) {
+            Log.w(TAG, "No data found for IDofExercise: " + IDofExercise);
+            if (data != null) data.close();
+            databaseHelper.close();
+            databaseHelperRPY.close();
+            databaseHelperProcessedData.close();
+            return;
+        }
+
         double yawAngle, pitchAngle, rollAngle;
         int firstControlNr = 1; 
 
@@ -107,13 +120,6 @@ public class DataProcessing
                     velocityX = integralVelocityX.integrate(data.getInt(4) - firstControlNr, nextTime - firstControlNr, compensatedGravity[0], nextCompensatedGravity[0]);
                     velocityY = integralVelocityY.integrate(data.getInt(4) - firstControlNr, nextTime - firstControlNr, compensatedGravity[1], nextCompensatedGravity[1]);
                     velocityZ = integralVelocityZ.integrate(data.getInt(4) - firstControlNr, nextTime - firstControlNr, compensatedGravity[2], nextCompensatedGravity[2]);
-
-//                    velocityX = 0;
-//                    velocityY = 0;
-//                    velocityZ = 0;
-//                    integralVelocityX.setToZero();
-//                    integralVelocityY.setToZero();
-//                    integralVelocityZ.setToZero();
 
                     // se almacenan la velocidad y el tiempo mientras esta en reposo
                     if(!previousState)
@@ -175,6 +181,12 @@ public class DataProcessing
         databaseHelperRPY.close();
         databaseHelperProcessedData.close();
 
+        while (changeStateTimesX.size() < 2) {
+            changeStateTimesX.add(new Pair<>(0, 0d));
+            changeStateTimesY.add(new Pair<>(0, 0d));
+            changeStateTimesZ.add(new Pair<>(0, 0d));
+        }
+
         compensateVelocityAndComputeDisplacement();
 
     }
@@ -188,6 +200,14 @@ public class DataProcessing
         DatabaseHelperFinalData databaseHelperFinalData = new DatabaseHelperFinalData(context);
 
         Cursor data = databaseHelperProcessedData.getData(IDofExercise);
+
+        if (data == null || data.getCount() == 0) {
+            Log.w(TAG, "No processed data found for IDofExercise: " + IDofExercise);
+            if (data != null) data.close();
+            databaseHelperFinalData.close();
+            databaseHelperProcessedData.close();
+            return;
+        }
 
         Integral integralDisplacementX = new Integral();
         Integral integralDisplacementY = new Integral();
@@ -205,24 +225,27 @@ public class DataProcessing
         double[] yY = new double[2];
         double[] yZ = new double[2];
 
-        xX[0] = changeStateTimesX.get(intervalsNr).first;
-        xY[0] = changeStateTimesY.get(intervalsNr).first;
-        xZ[0] = changeStateTimesZ.get(intervalsNr).first;
+        if (intervalsNr < changeStateTimesX.size()) {
+            xX[0] = changeStateTimesX.get(intervalsNr).first;
+            xY[0] = changeStateTimesY.get(intervalsNr).first;
+            xZ[0] = changeStateTimesZ.get(intervalsNr).first;
 
-        yX[0] = changeStateTimesX.get(intervalsNr).second;
-        yY[0] = changeStateTimesY.get(intervalsNr).second;
-        yZ[0] = changeStateTimesZ.get(intervalsNr).second;
+            yX[0] = changeStateTimesX.get(intervalsNr).second;
+            yY[0] = changeStateTimesY.get(intervalsNr).second;
+            yZ[0] = changeStateTimesZ.get(intervalsNr).second;
+        }
 
-        intervalsNr++;
+        int nextInterval = Math.min(intervalsNr + 1, changeStateTimesX.size() - 1);
 
-        xX[1] = changeStateTimesX.get(intervalsNr).first;
-        xY[1] = changeStateTimesY.get(intervalsNr).first;
-        xZ[1] = changeStateTimesZ.get(intervalsNr).first;
+        xX[1] = changeStateTimesX.get(nextInterval).first;
+        xY[1] = changeStateTimesY.get(nextInterval).first;
+        xZ[1] = changeStateTimesZ.get(nextInterval).first;
 
-        yX[1] = changeStateTimesX.get(intervalsNr).second;
-        yY[1] = changeStateTimesY.get(intervalsNr).second;
-        yZ[1] = changeStateTimesZ.get(intervalsNr).second;
+        yX[1] = changeStateTimesX.get(nextInterval).second;
+        yY[1] = changeStateTimesY.get(nextInterval).second;
+        yZ[1] = changeStateTimesZ.get(nextInterval).second;
 
+        intervalsNr = nextInterval;
 
         while(data.moveToNext())
         {
@@ -259,24 +282,26 @@ public class DataProcessing
                 if(previousState)
                 {
                     intervalsNr++;
+                    if (intervalsNr < changeStateTimesX.size()) {
+                        xX[0] = changeStateTimesX.get(intervalsNr).first;
+                        xY[0] = changeStateTimesY.get(intervalsNr).first;
+                        xZ[0] = changeStateTimesZ.get(intervalsNr).first;
 
-                    xX[0] = changeStateTimesX.get(intervalsNr).first;
-                    xY[0] = changeStateTimesY.get(intervalsNr).first;
-                    xZ[0] = changeStateTimesZ.get(intervalsNr).first;
-
-                    yX[0] = changeStateTimesX.get(intervalsNr).second;
-                    yY[0] = changeStateTimesY.get(intervalsNr).second;
-                    yZ[0] = changeStateTimesZ.get(intervalsNr).second;
+                        yX[0] = changeStateTimesX.get(intervalsNr).second;
+                        yY[0] = changeStateTimesY.get(intervalsNr).second;
+                        yZ[0] = changeStateTimesZ.get(intervalsNr).second;
+                    }
 
                     intervalsNr++;
+                    if (intervalsNr < changeStateTimesX.size()) {
+                        xX[1] = changeStateTimesX.get(intervalsNr).first;
+                        xY[1] = changeStateTimesY.get(intervalsNr).first;
+                        xZ[1] = changeStateTimesZ.get(intervalsNr).first;
 
-                    xX[1] = changeStateTimesX.get(intervalsNr).first;
-                    xY[1] = changeStateTimesY.get(intervalsNr).first;
-                    xZ[1] = changeStateTimesZ.get(intervalsNr).first;
-
-                    yX[1] = changeStateTimesX.get(intervalsNr).second;
-                    yY[1] = changeStateTimesY.get(intervalsNr).second;
-                    yZ[1] = changeStateTimesZ.get(intervalsNr).second;
+                        yX[1] = changeStateTimesX.get(intervalsNr).second;
+                        yY[1] = changeStateTimesY.get(intervalsNr).second;
+                        yZ[1] = changeStateTimesZ.get(intervalsNr).second;
+                    }
                 }
 
                 previousState = false;
@@ -296,10 +321,6 @@ public class DataProcessing
                 double displacementY = integralDisplacementY.integrate(data.getInt(4), nextTime, CompensatedVelocity[1], nextCompensatedVelocity[1]);
                 double displacementZ = integralDisplacementZ.integrate(data.getInt(4), nextTime, CompensatedVelocity[2], nextCompensatedVelocity[2]);
 
-
-//                CompensatedVelocity[2] = linearFunction(xX, yX, data.getInt(4));
-//                databaseHelperFinalData.addData(IDofExercise, data.getString(2), data.getString(3), data.getInt(4),
-//                        CompensatedVelocity, new double[]{displacementX, displacementY, displacementZ});
                 databaseHelperFinalData.addData(IDofExercise, data.getString(2), data.getString(3), data.getInt(4),
                         CompensatedVelocity, new double[]{displacementX, displacementY, displacementZ});
 
@@ -321,9 +342,12 @@ public class DataProcessing
      */
     private double linearFunction(int[] x, double[] y, double value)
     {
-        double a = (y[1] - y[0])/(x[1] - x[0]);
+        if (x[1] == x[0]) {
+            return y[0];
+        }
+        double a = (y[1] - y[0]) / (double) (x[1] - x[0]);
         double b = y[0] - a * x[0];
 
-        return (a*value + b);
+        return (a * value + b);
     }
 }

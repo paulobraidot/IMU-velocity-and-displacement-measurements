@@ -6,9 +6,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Color;
-// import android.support.annotation.Nullable;
 import androidx.annotation.Nullable;
-// import android.support.v7.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -58,7 +56,11 @@ public class ListDataFromSqlDatabaseBySelectedId extends AppCompatActivity
     {
         super.onCreate(savedInstanceState);
 
-        BT = (BluetoothConnection)getApplicationContext();
+        try {
+            BT = (BluetoothConnection) getApplicationContext();
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting BluetoothConnection application context", e);
+        }
 
         setContentView(R.layout.activity_list_data_from_sql_database_by_selected_id);
         mListView = findViewById(R.id.listViewSqlData);
@@ -77,14 +79,26 @@ public class ListDataFromSqlDatabaseBySelectedId extends AppCompatActivity
     protected void onResume()
     {
         super.onResume();
-        BT.setContextAndRegisterReceivers(this);
+        if (BT != null) {
+            try {
+                BT.setContextAndRegisterReceivers(this);
+            } catch (Exception e) {
+                Log.e(TAG, "Error registering receivers in ListDataFromSqlDatabaseBySelectedId", e);
+            }
+        }
     }
 
     @Override
     protected void onPause()
     {
         super.onPause();
-        BT.unregisterBroadcastReceiver();
+        if (BT != null) {
+            try {
+                BT.unregisterBroadcastReceiver();
+            } catch (Exception e) {
+                Log.e(TAG, "Error unregistering receivers in ListDataFromSqlDatabaseBySelectedId", e);
+            }
+        }
     }
 
     /**
@@ -111,15 +125,11 @@ public class ListDataFromSqlDatabaseBySelectedId extends AppCompatActivity
     private void listData(int IDinSQL)
     {
         Log.d(TAG, "listing all data");
-        StringBuilder allDataToShow = new StringBuilder();
 
         int numberOfColumns = mDatabaseHelper.getNumberOfColumns();
 
-        // toma los datos y los une a la lista
         DatabaseHelperRPY databaseHelperRPY = new DatabaseHelperRPY(this);
         Cursor data = databaseHelperRPY.getData(IDinSQL);
-
-
 
         GraphView graph = findViewById(R.id.graph);
 
@@ -127,12 +137,8 @@ public class ListDataFromSqlDatabaseBySelectedId extends AppCompatActivity
         DataPoint[] dataPointPitch = new DataPoint[data.getCount()];
         DataPoint[] dataPointRoll = new DataPoint[data.getCount()];
 
-
-
         int countData = 0;
         boolean first = true;
-        int firstNumber = 0;
-
 
         while(data.moveToNext())
         {
@@ -145,20 +151,19 @@ public class ListDataFromSqlDatabaseBySelectedId extends AppCompatActivity
         data.close();
         databaseHelperRPY.close();
 
+        if (graph != null && dataPointYaw.length > 0) {
+            LineGraphSeries<DataPoint> seriesYaw = new LineGraphSeries<DataPoint>(dataPointYaw);
+            LineGraphSeries<DataPoint> seriesPitch = new LineGraphSeries<DataPoint>(dataPointPitch);
+            seriesPitch.setColor(Color.RED);
+            LineGraphSeries<DataPoint> seriesRoll = new LineGraphSeries<DataPoint>(dataPointRoll);
+            seriesRoll.setColor(Color.GREEN);
 
+            graph.addSeries(seriesYaw);
+            graph.addSeries(seriesPitch);
+            graph.addSeries(seriesRoll);
 
-        LineGraphSeries<DataPoint> seriesYaw = new LineGraphSeries<DataPoint>(dataPointYaw);
-        LineGraphSeries<DataPoint> seriesPitch = new LineGraphSeries<DataPoint>(dataPointPitch);
-        seriesPitch.setColor(Color.RED);
-        LineGraphSeries<DataPoint> seriesRoll = new LineGraphSeries<DataPoint>(dataPointRoll);
-        seriesRoll.setColor(Color.GREEN);
-
-        graph.addSeries(seriesYaw);
-        graph.addSeries(seriesPitch);
-        graph.addSeries(seriesRoll);
-
-        graph.getViewport().setScalable(true);
-
+            graph.getViewport().setScalable(true);
+        }
 
         ////////////////////////////////////////////////MEDICIÓN///////////////////////////////////////////////////////
         DatabaseHelper databaseHelper = new DatabaseHelper(this);
@@ -197,28 +202,30 @@ public class ListDataFromSqlDatabaseBySelectedId extends AppCompatActivity
         data2.close();
         databaseHelper.close();
 
-        LineGraphSeries<DataPoint> seriesAccelX = new LineGraphSeries<DataPoint>(dataPointAccelX);
-        LineGraphSeries<DataPoint> seriesAccelY = new LineGraphSeries<DataPoint>(dataPointAccelY);
-        seriesAccelY.setColor(Color.RED);
-        LineGraphSeries<DataPoint> seriesAccelZ = new LineGraphSeries<DataPoint>(dataPointAccelZ);
-        seriesAccelZ.setColor(Color.GREEN);
+        if (graph2 != null && dataPointAccelX.length > 0) {
+            LineGraphSeries<DataPoint> seriesAccelX = new LineGraphSeries<DataPoint>(dataPointAccelX);
+            LineGraphSeries<DataPoint> seriesAccelY = new LineGraphSeries<DataPoint>(dataPointAccelY);
+            seriesAccelY.setColor(Color.RED);
+            LineGraphSeries<DataPoint> seriesAccelZ = new LineGraphSeries<DataPoint>(dataPointAccelZ);
+            seriesAccelZ.setColor(Color.GREEN);
 
-        graph2.addSeries(seriesAccelX);
-        graph2.addSeries(seriesAccelY);
-        graph2.addSeries(seriesAccelZ);
+            graph2.addSeries(seriesAccelX);
+            graph2.addSeries(seriesAccelY);
+            graph2.addSeries(seriesAccelZ);
 
-        LineGraphSeries<DataPoint> seriesGyroX = new LineGraphSeries<DataPoint>(dataPointGyroX);
-        seriesGyroX.setColor(Color.BLACK);
-        LineGraphSeries<DataPoint> seriesGyroY = new LineGraphSeries<DataPoint>(dataPointGyroY);
-        seriesGyroY.setColor(Color.BLACK);
-        LineGraphSeries<DataPoint> seriesGyroZ = new LineGraphSeries<DataPoint>(dataPointGyroZ);
-        seriesGyroZ.setColor(Color.BLACK);
+            LineGraphSeries<DataPoint> seriesGyroX = new LineGraphSeries<DataPoint>(dataPointGyroX);
+            seriesGyroX.setColor(Color.BLACK);
+            LineGraphSeries<DataPoint> seriesGyroY = new LineGraphSeries<DataPoint>(dataPointGyroY);
+            seriesGyroY.setColor(Color.BLACK);
+            LineGraphSeries<DataPoint> seriesGyroZ = new LineGraphSeries<DataPoint>(dataPointGyroZ);
+            seriesGyroZ.setColor(Color.BLACK);
 
-        graph2.addSeries(seriesGyroX);
-        graph2.addSeries(seriesGyroY);
-        graph2.addSeries(seriesGyroZ);
+            graph2.addSeries(seriesGyroX);
+            graph2.addSeries(seriesGyroY);
+            graph2.addSeries(seriesGyroZ);
 
-        graph2.getViewport().setScalable(true);
+            graph2.getViewport().setScalable(true);
+        }
 
         //////////////////////////////////////////////ACELERACIÓN COMPENSADA///////////////////////////////////////////////////////
         DatabaseHelperProcessedData databaseHelperProcessedData = new DatabaseHelperProcessedData(this);
@@ -254,32 +261,36 @@ public class ListDataFromSqlDatabaseBySelectedId extends AppCompatActivity
         data3.close();
         databaseHelperProcessedData.close();
 
-        LineGraphSeries<DataPoint> seriesAccelCompensatedX = new LineGraphSeries<DataPoint>(dataPointAccelCompensatedX);
-        LineGraphSeries<DataPoint> seriesAccelCompensatedY = new LineGraphSeries<DataPoint>(dataPointAccelCompensatedY);
-        seriesAccelCompensatedY.setColor(Color.RED);
-        LineGraphSeries<DataPoint> seriesAccelCompensatedZ = new LineGraphSeries<DataPoint>(dataPointAccelCompensatedZ);
-        seriesAccelCompensatedZ.setColor(Color.GREEN);
-        LineGraphSeries<DataPoint> seriesStaticIntervals = new LineGraphSeries<DataPoint>(dataPointStaticIntervals);
-        seriesStaticIntervals.setColor(Color.BLACK);
+        if (graph3 != null && dataPointAccelCompensatedX.length > 0) {
+            LineGraphSeries<DataPoint> seriesAccelCompensatedX = new LineGraphSeries<DataPoint>(dataPointAccelCompensatedX);
+            LineGraphSeries<DataPoint> seriesAccelCompensatedY = new LineGraphSeries<DataPoint>(dataPointAccelCompensatedY);
+            seriesAccelCompensatedY.setColor(Color.RED);
+            LineGraphSeries<DataPoint> seriesAccelCompensatedZ = new LineGraphSeries<DataPoint>(dataPointAccelCompensatedZ);
+            seriesAccelCompensatedZ.setColor(Color.GREEN);
+            LineGraphSeries<DataPoint> seriesStaticIntervals = new LineGraphSeries<DataPoint>(dataPointStaticIntervals);
+            seriesStaticIntervals.setColor(Color.BLACK);
 
-        graph3.addSeries(seriesAccelCompensatedX);
-        graph3.addSeries(seriesAccelCompensatedY);
-        graph3.addSeries(seriesAccelCompensatedZ);
-        graph3.addSeries(seriesStaticIntervals);
+            graph3.addSeries(seriesAccelCompensatedX);
+            graph3.addSeries(seriesAccelCompensatedY);
+            graph3.addSeries(seriesAccelCompensatedZ);
+            graph3.addSeries(seriesStaticIntervals);
 
-        graph3.getViewport().setScalable(true);
+            graph3.getViewport().setScalable(true);
+        }
 
-        LineGraphSeries<DataPoint> seriesVelX = new LineGraphSeries<DataPoint>(dataPointVelX);
-        LineGraphSeries<DataPoint> seriesVelY = new LineGraphSeries<DataPoint>(dataPointVelY);
-        seriesVelY.setColor(Color.RED);
-        LineGraphSeries<DataPoint> seriesVelZ = new LineGraphSeries<DataPoint>(dataPointVelZ);
-        seriesVelZ.setColor(Color.GREEN);
+        if (graph4 != null && dataPointVelX.length > 0) {
+            LineGraphSeries<DataPoint> seriesVelX = new LineGraphSeries<DataPoint>(dataPointVelX);
+            LineGraphSeries<DataPoint> seriesVelY = new LineGraphSeries<DataPoint>(dataPointVelY);
+            seriesVelY.setColor(Color.RED);
+            LineGraphSeries<DataPoint> seriesVelZ = new LineGraphSeries<DataPoint>(dataPointVelZ);
+            seriesVelZ.setColor(Color.GREEN);
 
-        graph4.addSeries(seriesVelX);
-        graph4.addSeries(seriesVelY);
-        graph4.addSeries(seriesVelZ);
+            graph4.addSeries(seriesVelX);
+            graph4.addSeries(seriesVelY);
+            graph4.addSeries(seriesVelZ);
 
-        graph4.getViewport().setScalable(true);
+            graph4.getViewport().setScalable(true);
+        }
 
         ////////////////////////////////////////////////VELOCIDAD COMPENSADA///////////////////////////////////////////////////////
         DatabaseHelperFinalData databaseHelperFinalData = new DatabaseHelperFinalData(this);
@@ -313,30 +324,33 @@ public class ListDataFromSqlDatabaseBySelectedId extends AppCompatActivity
         data4.close();
         databaseHelperFinalData.close();
 
+        if (graph5 != null && dataPointVelCompensatedX.length > 0) {
+            LineGraphSeries<DataPoint> seriesVelCompensatedX = new LineGraphSeries<DataPoint>(dataPointVelCompensatedX);
+            LineGraphSeries<DataPoint> seriesVelCompensatedY = new LineGraphSeries<DataPoint>(dataPointVelCompensatedY);
+            seriesVelCompensatedY.setColor(Color.RED);
+            LineGraphSeries<DataPoint> seriesVelCompensatedZ = new LineGraphSeries<DataPoint>(dataPointVelCompensatedZ);
+            seriesVelCompensatedZ.setColor(Color.GREEN);
 
-        LineGraphSeries<DataPoint> seriesVelCompensatedX = new LineGraphSeries<DataPoint>(dataPointVelCompensatedX);
-        LineGraphSeries<DataPoint> seriesVelCompensatedY = new LineGraphSeries<DataPoint>(dataPointVelCompensatedY);
-        seriesVelCompensatedY.setColor(Color.RED);
-        LineGraphSeries<DataPoint> seriesVelCompensatedZ = new LineGraphSeries<DataPoint>(dataPointVelCompensatedZ);
-        seriesVelCompensatedZ.setColor(Color.GREEN);
+            graph5.addSeries(seriesVelCompensatedX);
+            graph5.addSeries(seriesVelCompensatedY);
+            graph5.addSeries(seriesVelCompensatedZ);
 
-        LineGraphSeries<DataPoint> seriesDisplacementX = new LineGraphSeries<DataPoint>(dataDisplacementX);
-        LineGraphSeries<DataPoint> seriesDisplacementY = new LineGraphSeries<DataPoint>(dataDisplacementY);
-        seriesDisplacementY.setColor(Color.RED);
-        LineGraphSeries<DataPoint> seriesDisplacementZ = new LineGraphSeries<DataPoint>(dataDisplacementZ);
-        seriesDisplacementZ.setColor(Color.GREEN);
+            graph5.getViewport().setScalable(true);
+        }
 
-        graph5.addSeries(seriesVelCompensatedX);
-        graph5.addSeries(seriesVelCompensatedY);
-        graph5.addSeries(seriesVelCompensatedZ);
+        if (graph6 != null && dataDisplacementX.length > 0) {
+            LineGraphSeries<DataPoint> seriesDisplacementX = new LineGraphSeries<DataPoint>(dataDisplacementX);
+            LineGraphSeries<DataPoint> seriesDisplacementY = new LineGraphSeries<DataPoint>(dataDisplacementY);
+            seriesDisplacementY.setColor(Color.RED);
+            LineGraphSeries<DataPoint> seriesDisplacementZ = new LineGraphSeries<DataPoint>(dataDisplacementZ);
+            seriesDisplacementZ.setColor(Color.GREEN);
 
-        graph5.getViewport().setScalable(true);
+            graph6.addSeries(seriesDisplacementX);
+            graph6.addSeries(seriesDisplacementY);
+            graph6.addSeries(seriesDisplacementZ);
 
-        graph6.addSeries(seriesDisplacementX);
-        graph6.addSeries(seriesDisplacementY);
-        graph6.addSeries(seriesDisplacementZ);
-
-        graph6.getViewport().setScalable(true);
+            graph6.getViewport().setScalable(true);
+        }
     }
 
 
