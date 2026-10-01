@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Programa</string>
+    <string name="instruction_main">Introduce un nombre para el ejercicio</string>
+    <string name="instruction_main2">y empieza a recopilar datos</string>
+    <string name="bluetooth_lack">El dispositivo no tiene Bluetooth</string>
+    <string name="bonded">Emparejado</string>
+    <string name="bonding">Emparejando...</string>
+    <string name="bond_none">No emparejado</string>
+    <string name="errorCheckDevices">No se pudieron transferir datos a través de Bluetooth, verifique la conexión</string>
+    <string name="found_device">Dispositivo encontrado</string>
+    <string name="connected">Conectado</string>
+    <string name="search_ended">Búsqueda finalizada</string>
+    <string name="disconnecting">Desconectando...</string>
+    <string name="disconnected">Desconectado</string>
+    <string name="connecting">Conectando...</string>
+    <string name="connectingProgress">Conectando a su dispositivo...</string>
+    <string name="please_wait">Espere, por favor</string>
+    <string name="connect_to_device">Conectar al dispositivo</string>
+    <string name="paired_devices">Dispositivos emparejados</string>
+    <string name="finding_devices">Buscando dispositivos...</string>
+    <string name="list_of_data_from_sql">Lista de la base de datos SQL</string>
+    <string name="show_data">Mostrar datos</string>
+    <string name="id">Identificador</string>
+    <string name="there_is_no_data_to_show">No hay elementos que mostrar</string>
+    <string name="data_collecting_stopped">Se detuvo la recopilación de datos</string>
+    <string name="data_collecting_started">Ha comenzado la recopilación de datos</string>
+    <string name="delete_data">Eliminar el dato</string>
+    <string name="new_exercise_name">Nuevo nombre para el ejercicio</string>
+    <string name="change_the_name">Nuevo nombre para el ejercicio</string>
+    <string name="you_must_enter_the_name">Debes ingresar un nombre</string>
+    <string name="deleted">Eliminado</string>
+    <string name="connect_first">Conéctese primero a su dispositivo</string>
+    <string name="collect_data">Recolectar datos</string>
+    <string name="exercise_name">Nombre del ejercicio</string>
+    <string name="delete_ask">¿Eliminar el dato?</string>
+    <string name="do_u_want_to_delete">¿Quiere eliminar los datos actualmente seleccionados?</string>
+    <string name="delete">Eliminar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="data_collecting">Recopilando datos...</string>
+    <string name="stop">Finalizar</string>
+    <string name="calculating">Calculando...</string>
+    <string name="select_mode">Seleccionar Modo</string>
+    <string name="standalone">Singular</string>
+    <string name="dual">Dual</string>
+</resources>
